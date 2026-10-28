@@ -1,0 +1,67 @@
+{
+    "name": "ilbronza/tasks",
+    "description": "Laravel task management with conversations, attachments and client participation",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Davide Bronzini",
+            "email": "davide@sistema.srl",
+            "homepage": "https://www.sistema.srl"
+        }
+    ],
+    "homepage": "https://github.com/ilBronza/Tasks",
+    "keywords": [
+        "Laravel",
+        "tasks",
+        "workflow",
+        "conversations"
+    ],
+    "require": {
+        "php": "^8.2",
+        "ilbronza/notes": "^3.0",
+        "laravel/framework": ">=10.48",
+        "ilbronza/accountmanager": "^2.5",
+        "ilbronza/crud": "^2.5",
+        "ilbronza/form": "*",
+        "ilbronza/formfield": "*",
+        "ilbronza/datatables": "*",
+        "ilbronza/buttons": "*",
+        "ilbronza/menu": "*",
+        "ilbronza/uikittemplate": "*",
+        "ilbronza/ukn": "*",
+        "spatie/laravel-permission": ">=5.11",
+        "spatie/laravel-medialibrary": ">=10.13",
+        "spatie/laravel-activitylog": ">=4.0",
+        "ramsey/uuid": "^4.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0",
+        "phpunit/phpunit": "^11.0",
+        "mockery/mockery": "^1.6",
+        "fakerphp/faker": "^1.23"
+    },
+    "autoload": {
+        "psr-4": {
+            "IlBronza\\Tasks\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "IlBronza\\Tasks\\Tests\\": "tests/",
+            "App\\": "tests/Fixtures/App/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "IlBronza\\Tasks\\TasksServiceProvider"
+            ],
+            "aliases": {
+                "Tasks": "IlBronza\\Tasks\\Facades\\Tasks"
+            }
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    }
+}
