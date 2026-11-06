@@ -14,6 +14,7 @@ class TaskShowFieldsetsParameters extends FieldsetParametersFile
 				'fields' => [
 					'title' => ['text' => 'string|required|max:255'],
 					'description' => ['textarea' => 'string|nullable'],
+					'link' => ['text' => 'nullable|string|url:http,https|max:2048'],
 					'status' => ['select' => 'string|nullable'],
 					'assignee_user_id' => [
 						'type' => 'select',

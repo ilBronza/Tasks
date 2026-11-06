@@ -310,6 +310,21 @@
         row.append(node('span', 'nt-detail-label', label), typeof value === 'string' ? node('span', '', value) : value);
         return row;
     }
+    function taskLink(task) {
+        if (task.link) {
+            try {
+                const url = new URL(task.link);
+                if (['http:', 'https:'].includes(url.protocol)) {
+                    const link = node('a', 'nt-task-link', task.link);
+                    link.href = url.href;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    return link;
+                }
+            } catch (_) { /* Invalid imported URLs must not become clickable links. */ }
+        }
+        return node('span', 'nt-detail-label', t.noLink);
+    }
     function renderDetail(task) {
         const panel = root.querySelector('[data-detail-content]');
         const heading = node('h2', '', task.title);
@@ -349,6 +364,7 @@
             return;
         }
         panel.append(property(t.status, status), property(t.assignee, person(task)), property(t.due, due(task)));
+        if (config.isStaff) panel.append(property(t.link, taskLink(task)));
         if (task.startDate) panel.append(property(t.startDate, task.startDate));
         panel.append(description);
         if (task.minutes !== null || task.commit) {

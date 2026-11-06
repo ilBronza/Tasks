@@ -23,6 +23,7 @@ class CustomConfigurationTest extends TestCase
     {
         $this->actingAsSuperadmin();
         $this->assertTrue(Schema::hasTable('application_tasks'));
+        $this->assertTrue(Schema::hasColumn('application_tasks', 'link'));
         $this->assertTrue(Schema::hasTable('application_task_participants'));
         $this->assertFalse(Schema::hasTable('notes__tasks'));
         $this->assertSame(['superadmin'], config('tasks.defaultRoles'));

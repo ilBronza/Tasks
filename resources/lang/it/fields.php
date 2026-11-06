@@ -3,6 +3,7 @@
 return [
 	'name' => 'Nome',
 	'description' => 'Descrizione',
+	'link' => 'Link',
 	'meaning' => 'Utilizzo',
 	'notes' => 'Nota',
 	'type_slug' => 'Tipo',

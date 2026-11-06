@@ -91,6 +91,8 @@ return [
 	'details' => 'Dettagli attività',
 	'closePanel' => 'Chiudi dettagli',
 	'description' => 'Descrizione',
+	'link' => 'Link',
+	'noLink' => 'Nessun link inserito',
 	'noDescription' => 'Nessuna descrizione aggiunta.',
 	'notes' => 'Note e allegati',
 	'tracking' => 'Tracciamento',

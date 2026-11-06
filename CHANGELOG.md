@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an optional HTTP/HTTPS link field to task forms and a clickable link in staff workspace details.
+
 - Use explicit workflow states and eligible assignees when rendering task forms.
 
 ## 1.0.0

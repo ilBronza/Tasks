@@ -39,6 +39,7 @@ class TaskIndexController extends TaskCRUD
 					'id' => (string) $task->getKey(),
 					'title' => $task->title ?: __('tasks::tasks.untitled'),
 					'description' => $isStaff ? trim(strip_tags($task->description ?? '')) : '',
+					'link' => $isStaff ? $task->link : null,
 					'status' => $task->status ?: 'open',
 					'assigneeId' => (string) ($task->assignee_user_id ?? ''),
 					'assignee' => $task->assignee?->name,

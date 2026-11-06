@@ -128,6 +128,7 @@ class TaskWorkspaceTest extends TestCase
 	{
 		$task = $this->task();
 		$task->description = 'Internal description';
+		$task->link = 'https://internal.example.com/task';
 		$task->commit = 'private-commit';
 		$task->save();
 		$this->reply($task, ['body' => 'Proposta da valutare'])->assertCreated();
@@ -141,7 +142,7 @@ class TaskWorkspaceTest extends TestCase
 		$this->actingAs($client);
 
 		$this->get('/tasks-management')->assertOk()->assertViewHas('tasks', function ($tasks) use ($task) {
-			return $tasks->pluck('id')->all() === [$task->getKey()] && $tasks[0]['description'] === '' && $tasks[0]['commit'] === null && $tasks[0]['messageCount'] === 1;
+			return $tasks->pluck('id')->all() === [$task->getKey()] && $tasks[0]['description'] === '' && $tasks[0]['link'] === null && $tasks[0]['commit'] === null && $tasks[0]['messageCount'] === 1;
 		});
 		$this->getJson($this->url($task))->assertOk()->assertJsonCount(1, 'messages')->assertJsonPath('messages.0.body', 'Proposta da valutare');
 		$this->reply($task, ['body' => 'Confermo'])->assertCreated()->assertJsonPath('message.author', 'Cliente');

@@ -54,6 +54,14 @@ Use `IlBronza\Tasks\Models\Task` for new code. Existing subclasses of
 Add `tasks` to `menu.serviceProviders` for task-only menu integration. Existing
 `notes` registration still includes tasks; registering both does not duplicate them.
 
+## Task link
+
+The create/edit form includes an optional `link` field next to the description.
+It accepts HTTP/HTTPS URLs up to 2048 characters and can be changed or cleared
+later. Staff see a clickable link in the task's details, opening in a new tab.
+Like the internal description, the link is not shared with client participants.
+Run `php artisan migrate` to add the column; existing tasks start with no link.
+
 ## Testing
 
 From the parent package workspace:
