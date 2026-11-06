@@ -67,6 +67,11 @@ class Task extends BaseModel implements HasMedia, AuthorizesNotes
 		];
 	}
 
+	public function getSelectPossibleStatusValues() : array
+	{
+		return static::getWorkflowStatuses();
+	}
+
 	public function userCanComment($user = null) : bool
 	{
 		return (bool) $this->userCanSee($user);
@@ -142,5 +147,10 @@ class Task extends BaseModel implements HasMedia, AuthorizesNotes
 	public function getPossibleAssigneeUsersArray() : array
 	{
 		return $this->getPossibleAssignees()->pluck('name', 'id')->toArray();
+	}
+
+	public function getPossibleAssigneesValuesArray() : array
+	{
+		return $this->getPossibleAssigneeUsersArray();
 	}
 }

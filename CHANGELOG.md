@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Use explicit workflow states and eligible assignees when rendering task forms.
+
 ## 1.0.0
 
 - Extract task management from ilbronza/notes into its own package.
