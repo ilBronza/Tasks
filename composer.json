@@ -18,10 +18,10 @@
     ],
     "require": {
         "php": "^8.2",
-        "ilbronza/notes": "^3.0",
+        "ilbronza/notes": "*",
         "laravel/framework": ">=10.48",
-        "ilbronza/accountmanager": "^2.5",
-        "ilbronza/crud": "^2.5",
+        "ilbronza/accountmanager": "*",
+        "ilbronza/crud": "*",
         "ilbronza/form": "*",
         "ilbronza/formfield": "*",
         "ilbronza/datatables": "*",
