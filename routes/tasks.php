@@ -8,6 +8,7 @@ use IlBronza\Tasks\Http\Controllers\Tasks\TaskEditUpdateController;
 use IlBronza\Tasks\Http\Controllers\Tasks\TaskIndexController;
 use IlBronza\Tasks\Http\Controllers\Tasks\TaskStatusController;
 use IlBronza\Tasks\Http\Controllers\Tasks\TaskConversationController;
+use IlBronza\Tasks\Http\Controllers\Tasks\TaskAssignmentController;
 
 Route::group([
 	'middleware' => ['web', 'auth', 'tasks.access'],
@@ -24,6 +25,7 @@ Route::group([
 		Route::get('{task}/edit', [TaskEditUpdateController::class, 'edit'])->name('edit');
 		Route::put('{task}', [TaskEditUpdateController::class, 'update'])->name('update');
 		Route::patch('{task}/status', [TaskStatusController::class, 'updateStatus'])->name('status');
+		Route::patch('{task}/assignment', [TaskAssignmentController::class, 'updateAssignment'])->name('assignment');
 		Route::get('{task}/conversation', [TaskConversationController::class, 'conversation'])->name('conversation.index');
 		Route::post('{task}/conversation', [TaskConversationController::class, 'reply'])->name('conversation.store');
 		Route::get('{task}/conversation/{note}/attachments/{media}', [TaskConversationController::class, 'attachment'])->name('conversation.attachment');

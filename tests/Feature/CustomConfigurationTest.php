@@ -16,6 +16,7 @@ class CustomConfigurationTest extends TestCase
         $app['config']->set('notes.conversation.participantsTable', 'application_task_participants');
         $app['config']->set('notes.conversation.disk', 'private');
         $app['config']->set('tasks.defaultRoles', ['superadmin']);
+        $app['config']->set('tasks.assignments.table', 'application_task_assignments');
         $app['config']->set('tasks.routeRoles.legacyTasks.closed', ['other-team']);
     }
 
@@ -25,6 +26,7 @@ class CustomConfigurationTest extends TestCase
         $this->assertTrue(Schema::hasTable('application_tasks'));
         $this->assertTrue(Schema::hasColumn('application_tasks', 'link'));
         $this->assertTrue(Schema::hasTable('application_task_participants'));
+        $this->assertTrue(Schema::hasTable('application_task_assignments'));
         $this->assertFalse(Schema::hasTable('notes__tasks'));
         $this->assertSame(['superadmin'], config('tasks.defaultRoles'));
         $this->assertSame('private', config('tasks.conversation.disk'));

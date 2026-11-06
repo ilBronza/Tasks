@@ -26,6 +26,7 @@ class TaskCreateStoreFieldsetsParameters extends FieldsetParametersFile
 						'rules' => 'string|nullable|exists:users,id',
 						'relation' => 'assignee'
 					],
+					'assignment_comment' => ['textarea' => 'string|nullable|max:10240'],
 				],
 				'width' => ['1-3@l', '1-2@m']
 			],

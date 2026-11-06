@@ -25,8 +25,9 @@ class TaskConversationController extends Controller
 			'body' => $note->notes ?? '',
 			'author' => $note->user?->name ?? __('notes::notes.unknownUser'),
 			'isOwn' => (string) $note->user_id === (string) $request->user()->getAuthIdentifier(),
-			'createdAt' => $note->created_at?->toIso8601String(),
+			'createdAt' => $note->created_at?->toISOString(),
 			'dateLabel' => $note->created_at?->format('d/m/Y H:i'),
+			'conversationOrder' => (int) $note->conversation_order,
 			'visibility' => $note->conversation_visibility ?? 'internal',
 			'attachments' => $note->media->map(fn ($media) => [
 				'name' => $media->file_name,
@@ -47,10 +48,20 @@ class TaskConversationController extends Controller
 			$query->where('conversation_visibility', 'shared');
 		$notes = $query->orderBy('created_at')->orderBy('conversation_order')->orderBy('id')->get();
 		$notes->each(fn ($note) => $note->setRelation('noteable', $model));
+		$messages = $notes->filter(fn ($note) => !$isStaff || $note->userCanSee($request->user()))
+			->map(fn ($note) => $this->serializeNote($note, $request, $model));
+		if ($isStaff)
+			$messages = $messages->concat($model->assignments()->orderBy('id')->get()
+				->map(fn ($entry) => $entry->toConversationMessage($request->user())));
 
 		return response()->json([
-			'messages' => $notes->filter(fn ($note) => !$isStaff || $note->userCanSee($request->user()))
-				->map(fn ($note) => $this->serializeNote($note, $request, $model))->values(),
+			// Notes timestamps have second precision. Use the shared sequence for
+			// changes and messages made in the same second.
+			'messages' => $messages->sort(fn ($a, $b) =>
+				strcmp(substr($a['createdAt'] ?? '', 0, 19), substr($b['createdAt'] ?? '', 0, 19))
+					?: ($a['conversationOrder'] <=> $b['conversationOrder']))->values(),
+			'assigneeId' => (string) ($model->assignee_user_id ?? ''),
+			'assignee' => $model->assignee?->name,
 			'participants' => $model->participants()->get()->map(fn ($user) => [
 				'id' => (string) $user->getKey(), 'name' => $user->name,
 				'removeUrl' => $isStaff && $model->userCanUpdate($request->user())
@@ -83,7 +94,7 @@ class TaskConversationController extends Controller
 			$note->notes = $body;
 			$note->user_id = $request->user()->getAuthIdentifier();
 			$note->conversation_visibility = $validated['visibility'];
-			$note->conversation_order = ($model->notes()->withArchived()->withTrashed()->max('conversation_order') ?? 0) + 1;
+			$note->conversation_order = $model->nextConversationOrder();
 			$note->save();
 
 			return $note;

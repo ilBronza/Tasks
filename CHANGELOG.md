@@ -3,10 +3,12 @@
 ## Unreleased
 
 - Add a reusable menu helper to create tasks in an iframe with the current page link and authenticated creator.
-
-- Add an optional HTTP/HTTPS link field to task forms and a clickable link in staff workspace details.
-
 - Use explicit workflow states and eligible assignees when rendering task forms.
+- Add an optional HTTP/HTTPS link field to task forms and a clickable link in staff workspace details.
+- Change or clear task assignees with an optional comment from the workspace or CRUD forms.
+- Save author, previous assignee, recipient, comment and time together in an assignment history row.
+- Show assignment history in the staff conversation, preserving existing task IDs and assignments.
+- Keep assignment updates and history atomic, including normal Eloquent saves.
 
 ## 1.0.0
 

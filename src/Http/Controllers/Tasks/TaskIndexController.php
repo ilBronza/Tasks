@@ -30,10 +30,14 @@ class TaskIndexController extends TaskCRUD
 			if (!$isStaff)
 				$query->where('conversation_visibility', 'shared');
 		}]);
+		if ($isStaff)
+			$tasks->loadCount('assignments');
 		$tasks = $tasks->filter(fn ($task) => $task->userCanSee($request->user()));
 		$prefix = config('tasks.routePrefix');
 
 		return view('tasks::tasks.index', [
+			'assignees' => $isStaff ? (new ($this->getModelClass()))->getPossibleAssignees()
+				->map(fn ($user) => ['id' => (string) $user->getKey(), 'name' => $user->name])->values() : [],
 			'tasks' => $tasks->map(function ($task) use ($prefix, $request, $isStaff) {
 				return [
 					'id' => (string) $task->getKey(),
@@ -51,10 +55,12 @@ class TaskIndexController extends TaskCRUD
 					'canUpdate' => (bool) $task->userCanUpdate($request->user()),
 					'editUrl' => route($prefix . 'edit', $task->getKey()),
 					'statusUrl' => route($prefix . 'status', $task->getKey()),
+					'assignmentUrl' => $isStaff && $task->userCanUpdate($request->user())
+						? route($prefix . 'assignment', $task->getKey()) : null,
 					'notesUrl' => $task->getNotesListUrl(),
 					'conversationUrl' => route($prefix . 'conversation.index', $task->getKey()),
 					'canComment' => $task->userCanComment($request->user()),
-					'messageCount' => $task->notes_count,
+					'messageCount' => $task->notes_count + ($isStaff ? $task->assignments_count : 0),
 				];
 			})->values(),
 			'statuses' => $this->getModelClass()::getWorkflowStatuses(),

@@ -11,6 +11,7 @@ use IlBronza\CRUD\Traits\Model\PackagedModelsTrait;
 use IlBronza\Notes\Traits\InteractsWithNotesTrait;
 use IlBronza\Notes\Contracts\AuthorizesNotes;
 use IlBronza\Notes\Models\Note;
+use IlBronza\Tasks\Models\Traits\TracksTaskAssignments;
 use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
 
@@ -21,6 +22,7 @@ class Task extends BaseModel implements HasMedia, AuthorizesNotes
 	use InteractsWithMedia;
 	use CRUDUseUuidTrait;
 	use PackagedModelsTrait;
+	use TracksTaskAssignments;
 
 	static $packageConfigPrefix = 'tasks';
 	static $modelConfigPrefix = 'task';

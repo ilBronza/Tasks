@@ -93,6 +93,31 @@ iframe when opened, so cached menu items never retain another page's link.
 No additional JavaScript build or parent-page include is required. Validation
 errors preserve the submitted link; application-provided defaults are also kept.
 
+## Assignments and history
+
+Each task keeps one current assignee in `assignee_user_id`. Staff who can update
+the task can change or clear that assignee in the workspace's details panel,
+with an optional comment. The usual create/edit form also accepts
+`assignment_comment`. Eligible recipients come from `getPossibleAssignees()`
+(the existing `taskAssignee` role by default).
+
+Every actual change appends one row to `tasks__assignments`, containing the task,
+authenticated author, previous assignee, recipient, comment and timestamp.
+The task itself retains its ID. Names are also captured at the time of the change,
+so later account renames or deletions do not rewrite history. Changes and comments
+appear together in the internal conversation; clients cannot see them.
+
+Run `php artisan migrate` when upgrading. Existing assignments are preserved;
+history starts with subsequent changes, without inventing past authors or dates.
+The history table name can be overridden with `tasks.assignments.table`.
+
+Normal Eloquent saves (including the existing CRUD forms) save the assignment and
+history in one transaction. Application code can set `assignment_comment` before
+calling `save()`. Without an authenticated user, the author is recorded as `Sistema`.
+Bulk query-builder updates and direct SQL bypass model tracking and must not be
+used for assignment changes. Re-saving the same assignee creates no history;
+a comment without a change is rejected so it cannot be silently discarded.
+
 ## Testing
 
 From the parent package workspace:

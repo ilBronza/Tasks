@@ -59,6 +59,7 @@
 
     <script type="application/json" data-task-config>{!! json_encode([
         'tasks' => $tasks,
+        'assignees' => $assignees,
         'statuses' => $statuses,
         'showClosed' => $showClosed,
         'currentUserId' => $currentUserId,

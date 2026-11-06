@@ -17,6 +17,8 @@
     const drafts = new Map();
     const replying = new Set();
     const conversationVersions = new Map();
+    const assignmentDrafts = new Map();
+    const assigning = new Set();
     let tasks = config.tasks;
     let view = config.initialView || 'list';
     let filter = 'all';
@@ -249,6 +251,7 @@
     }
     function render() {
         const filtered = visibleTasks();
+        refreshAssigneeFilter();
         refreshStats();
         root.querySelectorAll('[data-view]').forEach(button => {
             button.classList.toggle('is-active', button.dataset.view === view);
@@ -365,6 +368,7 @@
         }
         panel.append(property(t.status, status), property(t.assignee, person(task)), property(t.due, due(task)));
         if (config.isStaff) panel.append(property(t.link, taskLink(task)));
+        if (config.isStaff && task.canUpdate && task.assignmentUrl) renderAssignmentForm(task, panel);
         if (task.startDate) panel.append(property(t.startDate, task.startDate));
         panel.append(description);
         if (task.minutes !== null || task.commit) {
@@ -375,6 +379,91 @@
             panel.append(tracking);
         }
         panel.append(actions);
+    }
+    function renderAssignmentForm(task, panel) {
+        if (!assignmentDrafts.has(task.id)) assignmentDrafts.set(task.id, { assigneeId: task.assigneeId, comment: '' });
+        const draft = assignmentDrafts.get(task.id);
+        const form = node('form', 'nt-assignment-form');
+        const label = node('label', '', t.assignee);
+        const select = node('select');
+        select.setAttribute('aria-label', t.assignee);
+        const candidates = new Map((config.assignees || []).map(user => [user.id, user.name]));
+        if (task.assigneeId && !candidates.has(task.assigneeId)) candidates.set(task.assigneeId, task.assignee || t.unassigned);
+        [['', t.unassigned], ...candidates].forEach(([id, name]) => {
+            const option = node('option', '', name);
+            option.value = id;
+            select.append(option);
+        });
+        select.value = draft.assigneeId;
+        select.disabled = assigning.has(task.id);
+        label.append(select);
+        const commentLabel = node('label', '', t.assignmentComment);
+        const comment = node('textarea');
+        comment.rows = 3;
+        comment.maxLength = 10240;
+        comment.value = draft.comment;
+        comment.disabled = assigning.has(task.id);
+        commentLabel.append(comment);
+        const submit = node('button', 'nt-button nt-button-primary', assigning.has(task.id) ? t.sendingMessage : t.changeAssignment);
+        submit.type = 'submit';
+        const refreshSubmit = () => { submit.disabled = assigning.has(task.id) || draft.assigneeId === task.assigneeId; };
+        select.addEventListener('change', () => { draft.assigneeId = select.value; refreshSubmit(); });
+        comment.addEventListener('input', () => { draft.comment = comment.value; });
+        refreshSubmit();
+        const error = node('p', 'nt-composer-error', draft.error || '');
+        error.setAttribute('role', 'alert');
+        form.append(label, commentLabel, node('p', 'nt-visibility-hint', t.assignmentHint), submit, error);
+        form.addEventListener('submit', event => { event.preventDefault(); updateAssignment(task); });
+        panel.append(form);
+    }
+    async function updateAssignment(task) {
+        const draft = assignmentDrafts.get(task.id);
+        if (!draft || assigning.has(task.id) || draft.assigneeId === task.assigneeId) return;
+        assigning.add(task.id);
+        delete draft.error;
+        // An older conversation response must not overwrite the new assignee.
+        conversationVersions.set(task.id, (conversationVersions.get(task.id) || 0) + 1);
+        const previous = conversations.get(task.id);
+        if (previous) conversations.set(task.id, { ...previous, loading: false });
+        renderDetail(task);
+        try {
+            const response = await fetch(task.assignmentUrl, {
+                method: 'PATCH', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': config.csrfToken },
+                body: JSON.stringify({ assignee_user_id: draft.assigneeId || null, comment: draft.comment }),
+            });
+            if (!response.ok) {
+                let message = [401, 419].includes(response.status) ? t.sessionExpired : response.status === 403 ? t.forbidden : t.assignmentError;
+                if (response.status === 422) {
+                    const result = await response.json();
+                    message = Object.values(result.errors || {}).flat().join(' ') || message;
+                }
+                throw new Error(message);
+            }
+            const result = await response.json();
+            if (result.id !== task.id) throw new Error(t.assignmentError);
+            task.assigneeId = result.assigneeId;
+            task.assignee = result.assignee;
+            assignmentDrafts.delete(task.id);
+            toast(t.assignmentSaved);
+            render();
+        } catch (error) {
+            draft.error = error.message || t.assignmentError;
+        } finally {
+            assigning.delete(task.id);
+            if (activeTaskId === task.id && dialog.open) renderDetail(task);
+            loadConversation(task);
+        }
+    }
+    function refreshAssigneeFilter() {
+        const selected = assigneeSelect.value;
+        const assignees = new Map(tasks.filter(task => task.assigneeId).map(task => [task.assigneeId, task.assignee || t.unassigned]));
+        // Keep an active filter even when its last task has been reassigned.
+        if (!['all', 'unassigned'].includes(selected) && !assignees.has(selected))
+            assignees.set(selected, assigneeSelect.selectedOptions[0]?.textContent || selected);
+        const options = [['all', t.allAssignees], ['unassigned', t.unassigned], ...Array.from(assignees).sort((a, b) => a[1].localeCompare(b[1]))];
+        assigneeSelect.replaceChildren(...options.map(([id, name]) => { const option = node('option', '', name); option.value = id; return option; }));
+        assigneeSelect.value = selected || 'all';
     }
     function openDetail(task, trigger) {
         activeTaskId = task.id;
@@ -510,6 +599,8 @@
             if (message.createdAt) date.dateTime = message.createdAt;
             header.append(date);
             item.append(header);
+            if (message.assignment) item.append(node('p', 'nt-assignment-change', t.assignmentChanged
+                .replace(':from', () => message.assignment.from).replace(':to', () => message.assignment.to)));
             if (message.body) item.append(node('p', 'nt-message-body', message.body));
             if (message.attachments.length) {
                 const files = node('div', 'nt-message-attachments');
@@ -528,7 +619,7 @@
     }
     async function loadConversation(task) {
         const previous = conversations.get(task.id);
-        if (previous?.loading || replying.has(task.id)) return;
+        if (previous?.loading || replying.has(task.id) || assigning.has(task.id)) return;
         conversations.set(task.id, { ...previous, loading: true, error: false });
         const version = (conversationVersions.get(task.id) || 0) + 1;
         conversationVersions.set(task.id, version);
@@ -539,6 +630,14 @@
             const result = await response.json();
             if (conversationVersions.get(task.id) !== version) return;
             conversations.set(task.id, { ...result, loading: false });
+            if (typeof result.assigneeId === 'string') {
+                const changed = task.assigneeId !== result.assigneeId;
+                const draft = assignmentDrafts.get(task.id);
+                if (changed && draft?.assigneeId === task.assigneeId && !draft.comment) assignmentDrafts.delete(task.id);
+                task.assigneeId = result.assigneeId;
+                task.assignee = result.assignee;
+                if (changed && activeTaskId === task.id && detailTab === 'details' && dialog.open) renderDetail(task);
+            }
             task.messageCount = result.messages.length;
             render();
         } catch (_) {
@@ -681,8 +780,6 @@
         render();
     }));
     root.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', () => { filter = button.dataset.filter; render(); }));
-    const assignees = new Map(tasks.filter(task => task.assigneeId).map(task => [task.assigneeId, task.assignee || t.unassigned]));
-    Array.from(assignees).sort((a, b) => a[1].localeCompare(b[1])).forEach(([id, name]) => { const option = node('option', '', name); option.value = id; assigneeSelect.append(option); });
     search.addEventListener('input', render);
     assigneeSelect.addEventListener('change', render);
     setInterval(() => {

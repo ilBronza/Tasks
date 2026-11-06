@@ -30,6 +30,7 @@ return [
 	'title' => 'Titolo',
 	'status' => 'Stato',
 	'assignee_user_id' => 'Assegnatario',
+	'assignment_comment' => 'Commento al cambio di assegnatario (facoltativo)',
 	'start_date' => 'Inizio',
 	'end_date' => 'Fine',
 	'minutes' => 'Minuti',

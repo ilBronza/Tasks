@@ -10,6 +10,9 @@ return [
     'routePrefix' => 'notesmanagertasks.',
     'defaultRoles' => ['superadmin', 'administrator', 'notes'],
     'routeRoles' => [],
+    'assignments' => [
+        'table' => 'tasks__assignments',
+    ],
     'conversation' => [
         'disk' => 'local',
         'participantsTable' => 'notes__task_participants',
