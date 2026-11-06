@@ -62,6 +62,37 @@ later. Staff see a clickable link in the task's details, opening in a new tab.
 Like the internal description, the link is not shared with client participants.
 Run `php artisan migrate` to add the column; existing tasks start with no link.
 
+## Create a task from the current page
+
+The Tasks menu includes **Crea attività da questa pagina** for users allowed to
+create tasks. It opens the usual create form in an iframe. The current page URL,
+including query parameters and fragment, is copied into the editable Link field.
+The creator is always the authenticated user. Saving creates the task and closes
+the popup; opening or cancelling the form does not create a record.
+
+To add the same action to an application menu, use the helper via the facade in
+`App\Providers\Helpers\MenuItems::loadProjectMenuItems()`:
+
+```php
+use IlBronza\Tasks\Facades\Tasks;
+
+Tasks::addCreateMenuButton();
+
+// Or place a separately named action under an existing parent button:
+Tasks::addCreateMenuButton($parentButton, [
+    'name' => 'project.createTask',
+    'text' => 'tasks::tasks.createFromPage',
+    'icon' => 'plus',
+]);
+```
+
+The helper returns the registered `Button`, or `null` when creation is not
+permitted, and reuses existing menu entries by name. It supports the traditional
+and progressive/AJAX menu, including the mobile sidebar. The URL is read by the
+iframe when opened, so cached menu items never retain another page's link.
+No additional JavaScript build or parent-page include is required. Validation
+errors preserve the submitted link; application-provided defaults are also kept.
+
 ## Testing
 
 From the parent package workspace:

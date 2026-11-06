@@ -2,14 +2,21 @@
 
 namespace IlBronza\Tasks;
 
+use IlBronza\Buttons\Button;
 use IlBronza\CRUD\Providers\RouterProvider\RoutedObjectInterface;
 use IlBronza\CRUD\Traits\IlBronzaPackages\IlBronzaPackagesTrait;
+use IlBronza\Tasks\Helpers\TaskCreationHelper;
 
 class Tasks implements RoutedObjectInterface
 {
     use IlBronzaPackagesTrait;
 
     public static $packageConfigPrefix = 'tasks';
+
+    public function addCreateMenuButton(?Button $parent = null, array $parameters = []): ?Button
+    {
+        return TaskCreationHelper::addMenuButton($parent, $parameters);
+    }
 
     public function tasksMenu($menu, $settingsButton)
     {
@@ -29,6 +36,8 @@ class Tasks implements RoutedObjectInterface
                 'text' => 'tasks::tasks.' . $label,
             ]));
         }
+
+        $this->addCreateMenuButton($tasksButton);
     }
 
     public function manageMenuButtons()

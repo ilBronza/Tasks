@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a reusable menu helper to create tasks in an iframe with the current page link and authenticated creator.
+
 - Add an optional HTTP/HTTPS link field to task forms and a clickable link in staff workspace details.
 
 - Use explicit workflow states and eligible assignees when rendering task forms.

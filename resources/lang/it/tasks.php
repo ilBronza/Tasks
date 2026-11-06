@@ -52,6 +52,7 @@ return [
 	'myTasks' => 'Le mie attività',
 	'closedIntro' => 'Il lavoro portato a termine, tutto in un posto.',
 	'new' => 'Nuova attività',
+	'createFromPage' => 'Crea attività da questa pagina',
 	'active' => 'Aperte',
 	'listView' => 'Elenco',
 	'boardView' => 'Bacheca',

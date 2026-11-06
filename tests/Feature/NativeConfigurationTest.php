@@ -25,6 +25,7 @@ class NativeConfigurationTest extends TestCase
         $this->assertSame('work.', config('notes.routePrefixTasks'));
         $this->assertSame('Task', $task->getMorphClass());
         $this->assertSame(route('work.edit', $task), $task->getEditUrl());
+        $this->assertSame(route('work.create', ['iframed' => 1, 'from_page' => 1]), app('tasks')->addCreateMenuButton()->getHref());
         $this->get('/tasks-management')->assertOk()->assertViewHas('tasks', fn ($items) => $items->count() === 1);
     }
 }
