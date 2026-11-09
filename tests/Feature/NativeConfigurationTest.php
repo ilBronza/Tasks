@@ -27,6 +27,6 @@ class NativeConfigurationTest extends TestCase
         $this->assertSame(route('work.edit', $task), $task->getEditUrl());
         $this->patchJson(route('work.assignment', $task), ['assignee_user_id' => null])->assertOk();
         $this->assertSame(route('work.create', ['iframed' => 1, 'from_page' => 1]), app('tasks')->addCreateMenuButton()->getHref());
-        $this->get('/tasks-management')->assertOk()->assertViewHas('tasks', fn ($items) => $items->count() === 1);
+        $this->get('/tasks-management?view=list')->assertOk()->assertViewHas('tasks', fn ($items) => $items->count() === 1);
     }
 }

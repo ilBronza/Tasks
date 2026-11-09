@@ -2,6 +2,7 @@
 
 namespace IlBronza\Tasks\Http\Controllers\Tasks;
 
+use IlBronza\Buttons\Button;
 use IlBronza\CRUD\Traits\CRUDIndexTrait;
 use Illuminate\Http\Request;
 
@@ -14,17 +15,19 @@ class TaskIndexController extends TaskCRUD
 
 	public function index(Request $request)
 	{
-		if ($request->query('view') === 'table' || $request->ajax())
+		$isStaff = $this->getModelClass()::isTaskStaff($request->user());
+		$view = $request->query('view');
+		if ($request->ajax() || $view === 'table' || ($isStaff && !in_array($view, ['board', 'list'], true)))
 		{
-			abort_unless($this->getModelClass()::isTaskStaff($request->user()), 403);
-			return $this->_index($request);
+			abort_unless($isStaff, 403);
+			// A custom model can restrict even staff to a subset of the tasks.
+			return $this->_index($request, elementsGetter: fn () => $this->visibleTasks($request));
 		}
 
 		$this->setPageTitle(__('tasks::tasks.workspace'));
 		$this->beforeIndex();
 
-		$isStaff = $this->getModelClass()::isTaskStaff($request->user());
-		$tasks = $this->getIndexElements();
+		$tasks = $this->visibleTasks($request);
 		$tasks->loadMissing('assignee');
 		$tasks->loadCount(['notes' => function ($query) use ($isStaff) {
 			if (!$isStaff)
@@ -32,7 +35,6 @@ class TaskIndexController extends TaskCRUD
 		}]);
 		if ($isStaff)
 			$tasks->loadCount('assignments');
-		$tasks = $tasks->filter(fn ($task) => $task->userCanSee($request->user()));
 		$prefix = config('tasks.routePrefix');
 
 		return view('tasks::tasks.index', [
@@ -74,6 +76,30 @@ class TaskIndexController extends TaskCRUD
 			'createUrl' => route($prefix . 'create'),
 			'tableUrl' => $request->fullUrlWithQuery(['view' => 'table']),
 		]);
+	}
+
+	protected function visibleTasks(Request $request)
+	{
+		return $this->getIndexElements()->filter(fn ($task) => $task->userCanSee($request->user()))->values();
+	}
+
+	public function getCaption(): string
+	{
+		return __($this->showClosed ? 'tasks::tasks.closed' : 'tasks::tasks.list');
+	}
+
+	public function addIndexButtons()
+	{
+		$prefix = config('tasks.routePrefix');
+		$this->getTable()->addButton(Button::create([
+			'text' => 'tasks::tasks.boardView', 'icon' => 'table-columns',
+			'href' => route($prefix . ($this->showClosed ? 'closed' : 'index'), ['view' => 'board']),
+		]));
+		$this->getTable()->addButton(Button::create([
+			'text' => $this->showClosed ? 'tasks::tasks.active' : 'tasks::tasks.closed',
+			'icon' => $this->showClosed ? 'list' : 'check',
+			'href' => route($prefix . ($this->showClosed ? 'index' : 'closed')),
+		]));
 	}
 
 	public function getIndexFieldsArray()

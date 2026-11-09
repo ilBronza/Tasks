@@ -16,6 +16,12 @@ Menu and UikitTemplate), including the application's base controller and User mo
 
 Enable the menu with `tasks.models.task.enabled = true` (or the existing
 `notes.models.task.enabled` setting). The workspace remains at `/tasks-management`.
+Staff land on the CRUD DataTable for both open and completed tasks. Click a title
+to open its conversation and attachments, or choose **Bacheca** in the toolbar
+for the board. Existing links with `?view=table`, `?view=board` or `?view=list`
+still work. Applications can override the table columns via
+`tasks.models.task.fieldsGroupsFiles.index`.
+
 Staff can manage tasks and invite existing user accounts as participants. Clients
 see only invited tasks and shared messages. Internal messages and their files remain
 private. Removing a participant revokes conversation and attachment access.

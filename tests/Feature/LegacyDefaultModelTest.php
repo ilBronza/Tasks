@@ -23,6 +23,6 @@ class LegacyDefaultModelTest extends TestCase
         $note->notes = 'Existing subject alias';
         $note->save();
         $this->assertSame('Task', $note->fresh()->noteable_type);
-        $this->get('/tasks-management')->assertOk()->assertViewHas('tasks', fn ($items) => $items->count() === 1);
+        $this->get('/tasks-management?view=list')->assertOk()->assertViewHas('tasks', fn ($items) => $items->count() === 1);
     }
 }

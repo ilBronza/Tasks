@@ -15,6 +15,6 @@ class PublishedViewsTest extends TestCase
     public function test_existing_published_notes_workspace_is_still_used(): void
     {
         $this->actingAsSuperadmin();
-        $this->get('/tasks-management')->assertOk()->assertSee('Legacy application task workspace');
+        $this->get('/tasks-management?view=list')->assertOk()->assertSee('Legacy application task workspace');
     }
 }

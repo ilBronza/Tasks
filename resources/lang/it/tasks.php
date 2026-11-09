@@ -115,7 +115,7 @@ return [
 	'sessionExpired' => 'Sessione scaduta. Ricarica la pagina per continuare.',
 	'forbidden' => 'Non hai il permesso di modificare questa attività.',
 	'loadError' => 'Impossibile caricare le attività. Ricarica la pagina.',
-	'javascriptRequired' => 'Attiva JavaScript per usare questo spazio, oppure apri la tabella avanzata.',
+	'javascriptRequired' => 'Attiva JavaScript per usare questo spazio.',
 	'statuses' => [
 		'open' => 'Da fare',
 		'in_progress' => 'In corso',

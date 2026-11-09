@@ -46,6 +46,34 @@ class TaskWorkspaceTest extends TestCase
 		return new UploadedFile($path, $name, null, null, true);
 	}
 
+	public function test_staff_land_on_the_datatable_with_visible_rows_and_working_conversation_links() : void
+	{
+		$active = $this->task('Bozza <script>alert(1)</script>');
+		$active->description = '<img src=x onerror=alert(1)>';
+		$active->commit = '" autofocus onfocus="alert(1)';
+		$active->save();
+		$closed = $this->task('Consegnato', 'closed');
+		$hidden = $this->task('Hidden');
+		$ajax = ['X-Requested-With' => 'XMLHttpRequest'];
+
+		foreach (['/tasks-management' => $active, '/tasks-management/completed' => $closed] as $path => $task) {
+			$page = $this->get($path)->assertOk()->assertViewIs('datatables::table');
+			$board = url($path . '?view=board');
+			$this->assertContains($board, collect($page->viewData('table')->getButtons())->map->getHref()->all());
+			$row = $this->getJson($path, $ajax)->assertOk()->assertJsonCount(1, 'data')->json('data.0');
+			$this->assertContains([$board . '#task-' . $task->getKey(), e($task->title)], $row);
+			if ($task === $active) {
+				$this->assertContains(e($task->description), $row);
+				$this->assertContains([$task->getKey(), e($task->commit)], $row);
+			}
+			$this->get($board)->assertOk()->assertViewIs('tasks::tasks.index')
+				->assertViewHas('tasks', fn ($tasks) => $tasks->pluck('id')->all() === [$task->getKey()]);
+		}
+
+		$this->get('/tasks-management?view=table')->assertOk()->assertViewIs('datatables::table');
+		$this->getJson('/tasks-management?rowId=' . $hidden->getKey(), $ajax)->assertOk()->assertJsonCount(0, 'data');
+	}
+
 	public function test_workspace_separates_active_and_completed_tasks_and_escapes_data() : void
 	{
 		$this->withoutExceptionHandling();
@@ -53,10 +81,10 @@ class TaskWorkspaceTest extends TestCase
 		$closed = $this->task('Consegnato', 'closed');
 		$this->task('Hidden');
 
-		$this->get('/tasks-management')->assertOk()->assertViewIs('tasks::tasks.index')
+		$this->get('/tasks-management?view=list')->assertOk()->assertViewIs('tasks::tasks.index')
 			->assertViewHas('tasks', fn ($tasks) => $tasks->pluck('id')->all() === [$active->getKey()])
 			->assertDontSee('</script><script>alert(1)</script>', false);
-		$this->get('/tasks-management/completed')->assertOk()
+		$this->get('/tasks-management/completed?view=list')->assertOk()
 			->assertViewHas('tasks', fn ($tasks) => $tasks->pluck('id')->all() === [$closed->getKey()]);
 	}
 
@@ -150,6 +178,7 @@ class TaskWorkspaceTest extends TestCase
 		$this->getJson($this->url($other))->assertForbidden();
 		$this->reply($other, ['body' => 'Tentativo'])->assertForbidden();
 		$this->get('/tasks-management?view=table')->assertForbidden();
+		$this->get('/tasks-management', ['X-Requested-With' => 'XMLHttpRequest'])->assertForbidden();
 		$this->get('/tasks-management/create')->assertForbidden();
 		$this->patchJson('/tasks-management/' . $task->getKey() . '/status', ['status' => 'closed'])->assertForbidden();
 		$this->postJson('/tasks-management/' . $task->getKey() . '/participants', ['email' => 'someone@example.com'])->assertForbidden();

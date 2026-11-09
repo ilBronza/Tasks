@@ -21,7 +21,8 @@
     </header>
 
     <nav class="nt-navigation" aria-label="{{ __('tasks::tasks.manage') }}">
-        <div class="nt-view-tabs" role="group" aria-label="{{ __('tasks::tasks.listView') }} / {{ __('tasks::tasks.boardView') }}">
+        <div class="nt-view-tabs" role="group" aria-label="{{ __('tasks::tasks.manage') }}">
+            @if($isStaff)<a class="nt-tab" href="{{ $tableUrl }}">{{ __('tasks::tasks.tableView') }}</a>@endif
             <button type="button" class="nt-tab is-active" data-view="list" aria-pressed="true"><span data-icon="list" aria-hidden="true"></span>{{ __('tasks::tasks.listView') }}</button>
             <button type="button" class="nt-tab" data-view="board" aria-pressed="false"><span data-icon="board" aria-hidden="true"></span>{{ __('tasks::tasks.boardView') }}</button>
         </div>
@@ -47,9 +48,9 @@
         </div>
     </div>
 
-    <div class="nt-content-meta"><span data-result-count aria-live="polite"></span><span class="nt-board-hint" data-board-hint hidden>{{ __('tasks::tasks.boardHint') }}</span>@if($isStaff)<a href="{{ $tableUrl }}">{{ __('tasks::tasks.tableView') }} <span aria-hidden="true">↗</span></a>@endif</div>
+    <div class="nt-content-meta"><span data-result-count aria-live="polite"></span><span class="nt-board-hint" data-board-hint hidden>{{ __('tasks::tasks.boardHint') }}</span></div>
     <div data-task-content aria-busy="false"></div>
-    <noscript><p class="nt-empty">{{ __('tasks::tasks.javascriptRequired') }} <a href="{{ $tableUrl }}">{{ __('tasks::tasks.tableView') }}</a></p></noscript>
+    <noscript><p class="nt-empty">{{ __('tasks::tasks.javascriptRequired') }}</p></noscript>
 
     <div class="nt-toast" data-toast role="status" aria-live="polite" hidden></div>
     <dialog class="nt-drawer" data-detail aria-labelledby="nt-detail-title">

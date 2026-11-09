@@ -44,6 +44,24 @@ class TaskAssignmentTest extends TestCase
         return '/tasks-management/' . $task->getKey() . '/assignment';
     }
 
+    public function test_datatable_edits_keep_assignee_ids_and_move_completed_tasks_out_of_the_open_table(): void
+    {
+        $task = $this->task();
+        $recipient = $this->assignee();
+        $this->get('/tasks-management')->assertOk()->assertSee('"'.$recipient->getKey().'":"Incaricato"', false);
+        $this->putJson($task->getUpdateUrl(), [
+            'ib-editor' => true, 'field' => 'assignee_user_id', 'value' => (string) $recipient->getKey(),
+        ])->assertOk()->assertJsonPath('success', true);
+        $this->assertEquals($recipient->getKey(), $task->assignments()->sole()->to_user_id);
+        $this->putJson($task->getUpdateUrl(), [
+            'ib-editor' => true, 'field' => 'status', 'value' => 'closed',
+            'fieldExtraData' => ['ajaxextradata' => ['reloadTable' => true]],
+        ])->assertOk()->assertJsonPath('action', 'reloadTable');
+        $ajax = ['X-Requested-With' => 'XMLHttpRequest'];
+        $this->getJson('/tasks-management', $ajax)->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/tasks-management/completed', $ajax)->assertOk()->assertJsonCount(1, 'data');
+    }
+
     public function test_assignment_and_optional_comment_share_one_history_record_with_authenticated_author(): void
     {
         $task = $this->task();
@@ -70,7 +88,7 @@ class TaskAssignmentTest extends TestCase
             ->assertJsonCount(1, 'messages')->assertJsonPath('messages.0.body', 'Segui la consegna')
             ->assertJsonPath('messages.0.author', 'Tester')->assertJsonPath('messages.0.visibility', 'internal')
             ->assertJsonPath('messages.0.assignment.toId', (string) $recipient->getKey());
-        $this->get('/tasks-management')->assertOk()->assertViewHas('tasks', fn ($tasks) =>
+        $this->get('/tasks-management?view=list')->assertOk()->assertViewHas('tasks', fn ($tasks) =>
             $tasks[0]['messageCount'] === 1 && $tasks[0]['assignmentUrl'] === url($this->url($task)));
     }
 

@@ -73,6 +73,7 @@ abstract class TestCase extends BaseTestCase
 	protected function defineDatabaseMigrations()
 	{
 		$this->loadMigrationsFrom(__DIR__ . '/Fixtures/migrations');
+		$this->loadMigrationsFrom(dirname((new \ReflectionClass(DatatablesServiceProvider::class))->getFileName()) . '/../database/migrations');
 		$this->loadMigrationsFrom(dirname((new \ReflectionClass(NotesServiceProvider::class))->getFileName()) . '/../database/migrations');
 		$this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 	}

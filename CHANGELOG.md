@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Open staff task lists in the CRUD DataTable, with links to conversations, the board and completed tasks. Client participants keep their shared workspace.
 - Add a reusable menu helper to create tasks in an iframe with the current page link and authenticated creator.
 - Use explicit workflow states and eligible assignees when rendering task forms.
 - Add an optional HTTP/HTTPS link field to task forms and a clickable link in staff workspace details.

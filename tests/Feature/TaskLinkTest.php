@@ -28,7 +28,7 @@ class TaskLinkTest extends TestCase
         $id = $task->getKey();
         $this->assertSame($link, $task->fresh()->link);
         $this->assertSame('Descrizione separata', $task->fresh()->description);
-        $this->get('/tasks-management')->assertOk()->assertViewHas('tasks', fn ($tasks) => $tasks[0]['link'] === $link);
+        $this->get('/tasks-management?view=list')->assertOk()->assertViewHas('tasks', fn ($tasks) => $tasks[0]['link'] === $link);
 
         $task = CrudModelUpdater::saveByRequest($task, $parameters, Request::create('/', 'PUT', [
             'title' => 'Verifica documento', 'link' => 'http://example.com/revised',

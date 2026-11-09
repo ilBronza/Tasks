@@ -257,6 +257,11 @@
             button.classList.toggle('is-active', button.dataset.view === view);
             button.setAttribute('aria-pressed', String(button.dataset.view === view));
         });
+        root.querySelectorAll('.nt-scope-links a').forEach(link => {
+            const url = new URL(link.href);
+            url.searchParams.set('view', view);
+            link.href = url.href;
+        });
         root.querySelectorAll('[data-filter]').forEach(button => {
             button.classList.toggle('is-active', button.dataset.filter === filter);
             button.setAttribute('aria-pressed', String(button.dataset.filter === filter));
@@ -788,5 +793,7 @@
         if (task && detailTab === 'conversation') loadConversation(task);
     }, 30000);
     render();
+    const linkedTask = tasks.find(task => location.hash === '#task-' + encodeURIComponent(task.id));
+    if (linkedTask) openDetail(linkedTask);
 })();
 </script>

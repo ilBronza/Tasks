@@ -32,7 +32,7 @@ return [
 	'assignee_user_id' => 'Assegnatario',
 	'assignment_comment' => 'Commento al cambio di assegnatario (facoltativo)',
 	'start_date' => 'Inizio',
-	'end_date' => 'Fine',
+	'end_date' => 'Scadenza',
 	'minutes' => 'Minuti',
 	'commit' => 'Commit',
 
