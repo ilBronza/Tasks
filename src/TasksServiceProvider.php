@@ -8,6 +8,10 @@ use IlBronza\Tasks\Models\Task;
 use IlBronza\Tasks\Support\LegacyConfiguration;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Console\Scheduling\Schedule;
+use IlBronza\Tasks\Console\RegisterTaskClient;
+use IlBronza\Tasks\Console\SyncTasks;
+use IlBronza\Tasks\Sync\TaskSync;
 
 class TasksServiceProvider extends ServiceProvider
 {
@@ -20,6 +24,8 @@ class TasksServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (!in_array(config('tasks.sync.mode'), ['standalone', 'hub', 'client'], true))
+            throw new \InvalidArgumentException('Invalid TASKS_SYNC_MODE.');
         // Reflection normalizes the old class_alias name from published notes.php.
         Relation::morphMap(['Task' => (new \ReflectionClass(Task::getProjectClassName()))->getName()]);
         // Make legacy model type hints work even when only the new class was instantiated.
@@ -32,8 +38,17 @@ class TasksServiceProvider extends ServiceProvider
         $this->app['router']->aliasMiddleware('tasks.access', TasksMiddlewareAccess::class);
         $this->app['router']->aliasMiddleware('notes.tasks', TasksMiddlewareAccess::class);
         $this->loadRoutesFrom(__DIR__ . '/../routes/tasks.php');
+        $this->loadRoutesFrom(__DIR__ . '/../routes/sync.php');
 
         if ($this->app->runningInConsole()) {
+            $this->commands([
+                RegisterTaskClient::class,
+                SyncTasks::class,
+            ]);
+            if (TaskSync::client())
+                $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+                    $schedule->command('tasks:sync')->everyMinute()->withoutOverlapping(10);
+                });
             $this->publishes([__DIR__ . '/../config/tasks.php' => config_path('tasks.php')], 'tasks.config');
             $this->publishes([__DIR__ . '/../resources/views' => resource_path('views/vendor/tasks')], 'tasks.views');
         }

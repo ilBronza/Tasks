@@ -3,6 +3,14 @@
 $prefix = (string) config('tasks.routePrefix');
 
 return [
+    'tasks.sync.open' => 'Riceve una segnalazione da un gestionale registrato.',
+    'tasks.sync.message' => 'Riceve un messaggio condiviso dal gestionale di origine.',
+    'tasks.sync.changes' => 'Restituisce gli aggiornamenti destinati al gestionale autenticato.',
+    $prefix . 'projects.index' => 'Elenca i progetti delle attività.',
+    $prefix . 'projects.create' => 'Mostra il modulo per creare un progetto.',
+    $prefix . 'projects.store' => 'Salva un nuovo progetto.',
+    $prefix . 'projects.edit' => 'Mostra il modulo di modifica del progetto.',
+    $prefix . 'projects.update' => 'Aggiorna il nome del progetto.',
     $prefix . 'closed' => 'Mostra le attività chiuse.',
     $prefix . 'index' => 'Mostra le attività non chiuse in tabella, elenco o bacheca.',
     $prefix . 'store' => 'Salva una nuova attività.',

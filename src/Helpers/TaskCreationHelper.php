@@ -3,6 +3,7 @@
 namespace IlBronza\Tasks\Helpers;
 
 use IlBronza\Buttons\Button;
+use IlBronza\Tasks\Sync\TaskSync;
 
 class TaskCreationHelper
 {
@@ -10,13 +11,13 @@ class TaskCreationHelper
     {
         $user = auth()->user();
         $taskClass = config('tasks.models.task.class');
-        if (!$user || !$taskClass::isTaskStaff($user) || !$taskClass::userCanCreate($user))
+        if (!$user || (!TaskSync::client() && !$taskClass::isTaskStaff($user)) || !$taskClass::userCanCreate($user))
             return false;
 
         foreach (['create', 'store'] as $action) {
             $route = config('tasks.routePrefix') . $action;
             $roles = config('tasks.routeRoles.' . $route, config('notes.routeRoles.' . $route))
-                ?: config('tasks.defaultRoles', []);
+                ?: (TaskSync::client() ? config('tasks.sync.reporter_roles') : config('tasks.defaultRoles', []));
             $roles = is_array($roles) ? $roles : explode('|', $roles);
             $roles = array_values(array_filter(array_map('trim', $roles)));
             if (!$user->hasAnyRole($roles))

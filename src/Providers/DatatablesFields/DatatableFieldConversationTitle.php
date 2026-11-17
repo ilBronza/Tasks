@@ -12,9 +12,14 @@ class DatatableFieldConversationTitle extends DatatableFieldLink
 	public function transformValue($task)
 	{
 		$route = config('tasks.routePrefix') . ($task->status === 'closed' ? 'closed' : 'index');
+		$query = [
+			'view' => 'board',
+		];
+		if (request()->filled('project_id'))
+			$query['project_id'] = $task->project_id;
 
 		return [
-			route($route, ['view' => 'board']) . '#task-' . rawurlencode($task->getKey()),
+			route($route, $query) . '#task-' . rawurlencode($task->getKey()),
 			e($task->title ?: __('tasks::tasks.untitled')),
 		];
 	}

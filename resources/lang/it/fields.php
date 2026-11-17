@@ -28,6 +28,8 @@ return [
 	'mySelfPrimary' => 'Nota Principale Personale',
 
 	'title' => 'Titolo',
+	'project_id' => 'Progetto',
+	'project.name' => 'Progetto',
 	'status' => 'Stato',
 	'assignee_user_id' => 'Assegnatario',
 	'assignment_comment' => 'Commento al cambio di assegnatario (facoltativo)',

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
+use IlBronza\Tasks\Sync\TaskSync;
 
 class TaskConversationController extends Controller
 {
@@ -23,8 +24,8 @@ class TaskConversationController extends Controller
 		return [
 			'id' => (string) $note->getKey(),
 			'body' => $note->notes ?? '',
-			'author' => $note->user?->name ?? __('notes::notes.unknownUser'),
-			'isOwn' => (string) $note->user_id === (string) $request->user()->getAuthIdentifier(),
+			'author' => $note->task_sync_author ?? $note->user?->name ?? __('notes::notes.unknownUser'),
+			'isOwn' => $note->task_sync_author === null && (string) $note->user_id === (string) $request->user()->getAuthIdentifier(),
 			'createdAt' => $note->created_at?->toISOString(),
 			'dateLabel' => $note->created_at?->format('d/m/Y H:i'),
 			'conversationOrder' => (int) $note->conversation_order,
@@ -60,8 +61,8 @@ class TaskConversationController extends Controller
 			'messages' => $messages->sort(fn ($a, $b) =>
 				strcmp(substr($a['createdAt'] ?? '', 0, 19), substr($b['createdAt'] ?? '', 0, 19))
 					?: ($a['conversationOrder'] <=> $b['conversationOrder']))->values(),
-			'assigneeId' => (string) ($model->assignee_user_id ?? ''),
-			'assignee' => $model->assignee?->name,
+			'assigneeId' => $model->workspaceAssigneeId(),
+			'assignee' => $model->workspaceAssignee(),
 			'participants' => $model->participants()->get()->map(fn ($user) => [
 				'id' => (string) $user->getKey(), 'name' => $user->name,
 				'removeUrl' => $isStaff && $model->userCanUpdate($request->user())
@@ -85,6 +86,8 @@ class TaskConversationController extends Controller
 		]);
 		$body = trim($validated['body'] ?? '');
 		$files = $request->file('files', []);
+		if ($model->sync_installation_id && $validated['visibility'] === 'shared' && $files)
+			throw ValidationException::withMessages(['files' => __('tasks::tasks.syncTextOnly')]);
 		if ($body === '' && !count($files))
 			throw ValidationException::withMessages(['body' => __('tasks::tasks.messageRequired')]);
 
@@ -96,6 +99,8 @@ class TaskConversationController extends Controller
 			$note->conversation_visibility = $validated['visibility'];
 			$note->conversation_order = $model->nextConversationOrder();
 			$note->save();
+			if ($model->sync_installation_id && $note->conversation_visibility === 'shared')
+				TaskSync::sharedMessage($model, $note, $request->user()->name);
 
 			return $note;
 		});

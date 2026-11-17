@@ -13,6 +13,12 @@ class TaskCreateStoreFieldsetsParameters extends FieldsetParametersFile
 				'translationPrefix' => 'tasks::fields',
 				'fields' => [
 					'title' => ['text' => 'string|required|max:255'],
+					'project_id' => [
+						'type' => 'select',
+						'multiple' => false,
+						'relation' => 'project',
+						'rules' => 'nullable|uuid|exists:' . config('tasks.models.project.table') . ',id,deleted_at,NULL',
+					],
 					'description' => ['textarea' => 'string|nullable'],
 					'link' => [
 						'type' => 'text',

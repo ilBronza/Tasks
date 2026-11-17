@@ -122,6 +122,7 @@
             text.append(count);
         }
         if (showDescription && task.description) text.append(node('span', 'nt-task-subtitle', task.description));
+        if (task.project) text.append(node('span', 'nt-task-subtitle', task.project));
         main.append(completeButton(task), text);
         return main;
     }
@@ -372,6 +373,8 @@
             return;
         }
         panel.append(property(t.status, status), property(t.assignee, person(task)), property(t.due, due(task)));
+        if (task.project) panel.append(property(t.project, task.project));
+        if (task.requester) panel.append(property(t.requester, task.requester));
         if (config.isStaff) panel.append(property(t.link, taskLink(task)));
         if (config.isStaff && task.canUpdate && task.assignmentUrl) renderAssignmentForm(task, panel);
         if (task.startDate) panel.append(property(t.startDate, task.startDate));
@@ -514,7 +517,10 @@
         visibility.value = draft.visibility;
         visibility.disabled = replying.has(task.id);
         const hint = node('p', 'nt-visibility-hint', draft.visibility === 'internal' ? t.internalHint : t.sharedHint);
-        visibility.addEventListener('change', () => { draft.visibility = visibility.value; hint.textContent = draft.visibility === 'internal' ? t.internalHint : t.sharedHint; });
+        visibility.addEventListener('change', () => {
+            draft.visibility = visibility.value;
+            renderDetail(task);
+        });
         const textarea = node('textarea');
         textarea.placeholder = t.messagePlaceholder;
         textarea.setAttribute('aria-label', t.messagePlaceholder);
@@ -562,7 +568,9 @@
         const send = node('button', 'nt-button nt-button-primary', replying.has(task.id) ? t.sendingMessage : t.sendMessage);
         send.type = 'submit';
         send.disabled = replying.has(task.id);
-        footer.append(attach, send);
+        const allowsFiles = !task.synchronized || draft.visibility === 'internal';
+        if (allowsFiles) footer.append(attach);
+        footer.append(send);
         const error = node('p', 'nt-composer-error');
         error.dataset.replyError = task.id;
         error.setAttribute('role', 'alert');
@@ -570,7 +578,7 @@
         form.append(textarea, filesInput, filesList, footer, error);
         form.addEventListener('submit', event => { event.preventDefault(); sendReply(task); });
         textarea.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); form.requestSubmit(); } });
-        panel.append(form, hint, node('p', 'nt-attachment-hint', t.attachmentHint));
+        panel.append(form, hint, node('p', 'nt-attachment-hint', allowsFiles ? t.attachmentHint : t.syncTextOnly));
     }
     function renderMessages(task) {
         const container = root.querySelector('[data-messages]');
@@ -787,6 +795,15 @@
     root.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', () => { filter = button.dataset.filter; render(); }));
     search.addEventListener('input', render);
     assigneeSelect.addEventListener('change', render);
+    root.querySelector('[data-project]')?.addEventListener('change', event => {
+        const url = new URL(location.href);
+        const projectId = event.target.value;
+        if (projectId) url.searchParams.set('project_id', projectId);
+        else url.searchParams.delete('project_id');
+        url.searchParams.set('view', view);
+        url.hash = '';
+        location.assign(url);
+    });
     setInterval(() => {
         if (!dialog.open || document.hidden) return;
         const task = tasks.find(task => task.id === activeTaskId);

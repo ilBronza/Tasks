@@ -1,6 +1,8 @@
 <?php
 
 return [
+	'requester' => 'Segnalato da',
+	'syncTextOnly' => 'I messaggi condivisi con il portale supportano il testo.',
     'task' => 'Attività',
     'tasks' => 'Attività',
     'cardTitleCreate' => 'Crea attività',
@@ -13,7 +15,11 @@ return [
 	'manage' => 'Attività',
 	'list' => 'Attività aperte',
 	'closed' => 'Completate',
-	'workspace' => 'Attività del progetto',
+	'workspace' => 'Bacheca attività',
+	'project' => 'Progetto',
+	'projects' => 'Progetti',
+	'allProjects' => 'Tutti i progetti',
+	'selectedProject' => 'Progetto selezionato',
 	'eyebrow' => 'SPAZIO DI LAVORO',
 	'intro' => 'Messaggi, aggiornamenti e decisioni',
 	'conversation' => 'Conversazione',

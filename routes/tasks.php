@@ -1,6 +1,7 @@
 <?php
 
 use IlBronza\Tasks\Facades\Tasks;
+use IlBronza\Tasks\Http\Controllers\ProjectController;
 use IlBronza\Tasks\Http\Controllers\Tasks\ClosedTaskIndexController;
 use IlBronza\Tasks\Http\Controllers\Tasks\TaskCreateStoreController;
 use IlBronza\Tasks\Http\Controllers\Tasks\TaskDestroyController;
@@ -18,6 +19,13 @@ Route::group([
 ],
 	function()
 	{
+		Route::resource('projects', ProjectController::class)->only([
+			'index',
+			'create',
+			'store',
+			'edit',
+			'update',
+		]);
 		Route::get('completed', [ClosedTaskIndexController::class, 'index'])->name('closed');
 		Route::get('', [TaskIndexController::class, 'index'])->name('index');
 		Route::post('', [TaskCreateStoreController::class, 'store'])->name('store');

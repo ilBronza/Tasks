@@ -16,6 +16,9 @@ class TaskFieldsGroupParametersFile extends FieldsGroupParametersFile
 			'fields' => [
 				'mySelfPrimary' => 'primary',
 				'title' => 'tasks::conversationTitle',
+				'project.name' => [
+					'type' => 'tasks::plainText',
+				],
 				'status' => [
 					'type' => 'editor.select',
 					'possibleValuesMethod' => 'getSelectPossibleStatusValues',

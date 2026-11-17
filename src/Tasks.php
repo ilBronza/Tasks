@@ -6,6 +6,7 @@ use IlBronza\Buttons\Button;
 use IlBronza\CRUD\Providers\RouterProvider\RoutedObjectInterface;
 use IlBronza\CRUD\Traits\IlBronzaPackages\IlBronzaPackagesTrait;
 use IlBronza\Tasks\Helpers\TaskCreationHelper;
+use IlBronza\Tasks\Sync\TaskSync;
 
 class Tasks implements RoutedObjectInterface
 {
@@ -20,6 +21,8 @@ class Tasks implements RoutedObjectInterface
 
     public function tasksMenu($menu, $settingsButton)
     {
+        if (TaskSync::client())
+            return;
         if ($settingsButton->getChildren()->contains(fn ($button) => $button->getName() === 'tasksManager'))
             return;
 
@@ -28,7 +31,20 @@ class Tasks implements RoutedObjectInterface
         ]);
         $settingsButton->addChild($tasksButton);
 
-        foreach (['index' => ['list', 'list'], 'closed' => ['check', 'closed']] as $route => [$icon, $label]) {
+        foreach ([
+            'index' => [
+                'list',
+                'list',
+            ],
+            'closed' => [
+                'check',
+                'closed',
+            ],
+            'projects.index' => [
+                'folder',
+                'projects',
+            ],
+        ] as $route => [$icon, $label]) {
             $tasksButton->addChild($menu->provideButton([
                 'name' => 'tasks.' . $route,
                 'icon' => $icon,
@@ -54,6 +70,10 @@ class Tasks implements RoutedObjectInterface
             ]);
         }
 
+        if (TaskSync::client()) {
+            $this->addCreateMenuButton();
+            return;
+        }
         $settings = $menu->provideButton([
             'text' => 'menu::menu.settings', 'name' => 'settings',
             'icon' => 'gear', 'roles' => ['administrator'],

@@ -5,6 +5,9 @@ namespace IlBronza\Tasks\Http\Controllers\Tasks;
 use IlBronza\CRUD\Traits\CRUDCreateStoreTrait;
 use IlBronza\CRUD\Traits\CRUDRelationshipTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use IlBronza\Tasks\Sync\TaskSync;
+use IlBronza\Tasks\Http\ParametersFiles\Fieldsets\ClientTaskFieldsetsParameters;
 
 use function config;
 
@@ -21,7 +24,7 @@ class TaskCreateStoreController extends TaskCRUD
 	public function userCanPerformCreate()
 	{
 		$taskClass = $this->getModelClass();
-		abort_unless($taskClass::isTaskStaff(auth()->user()) && $taskClass::userCanCreate(auth()->user()), 403);
+		abort_unless((TaskSync::client() || $taskClass::isTaskStaff(auth()->user())) && $taskClass::userCanCreate(auth()->user()), 403);
 	}
 
 	public function checkUserStoringRights()
@@ -31,7 +34,14 @@ class TaskCreateStoreController extends TaskCRUD
 
 	public function getModelDefaultParameters() : array
 	{
-		return array_replace(parent::getModelDefaultParameters(), ['user_id' => auth()->id()]);
+		$defaults = parent::getModelDefaultParameters();
+		$defaults['user_id'] = auth()->id();
+		if (request()->isMethod('GET') && ($id = request()->query('project_id')) !== null) {
+			abort_unless(Str::isUuid($id) && config('tasks.models.project.class')::whereKey($id)->exists(), 404);
+			$defaults['project_id'] = $id;
+		}
+
+		return $defaults;
 	}
 
 	public function store(Request $request, string $model = null)
@@ -55,6 +65,8 @@ class TaskCreateStoreController extends TaskCRUD
 
 	public function getGenericParametersFile() : ? string
 	{
+		if (TaskSync::client())
+			return ClientTaskFieldsetsParameters::class;
 		return config('tasks.models.task.parametersFiles.create');
 	}
 }

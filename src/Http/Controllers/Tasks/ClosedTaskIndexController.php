@@ -8,7 +8,7 @@ class ClosedTaskIndexController extends TaskIndexController
 
 	public function getIndexElements()
 	{
-		return $this->getModelClass()::closed()->latest('updated_at')->get();
+		return $this->taskQuery()->closed()->latest('updated_at')->get();
 	}
 
 }

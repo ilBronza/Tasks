@@ -17,6 +17,7 @@ class CustomConfigurationTest extends TestCase
         $app['config']->set('notes.conversation.disk', 'private');
         $app['config']->set('tasks.defaultRoles', ['superadmin']);
         $app['config']->set('tasks.assignments.table', 'application_task_assignments');
+        $app['config']->set('tasks.models.project.table', 'application_task_projects');
         $app['config']->set('tasks.routeRoles.legacyTasks.closed', ['other-team']);
     }
 
@@ -27,12 +28,15 @@ class CustomConfigurationTest extends TestCase
         $this->assertTrue(Schema::hasColumn('application_tasks', 'link'));
         $this->assertTrue(Schema::hasTable('application_task_participants'));
         $this->assertTrue(Schema::hasTable('application_task_assignments'));
+        $this->assertTrue(Schema::hasTable('application_task_projects'));
+        $this->assertTrue(Schema::hasColumn('application_tasks', 'project_id'));
         $this->assertFalse(Schema::hasTable('notes__tasks'));
         $this->assertSame(['superadmin'], config('tasks.defaultRoles'));
         $this->assertSame('private', config('tasks.conversation.disk'));
         $this->assertSame(WorkspaceTask::class, config('tasks.models.task.class'));
         $this->assertSame(url('/tasks-management'), route('legacyTasks.index'));
         $this->get('/tasks-management')->assertOk();
+        $this->get(route('legacyTasks.projects.index'))->assertOk();
         $this->get('/tasks-management/completed')->assertForbidden();
     }
 }

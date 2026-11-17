@@ -104,7 +104,12 @@ class PackageCompatibilityTest extends TestCase
         $this->assertNotNull($button);
         app('notes')->tasksMenu($menu, $menu->getButtonByName('settings'));
         app('tasks')->manageMenuButtons();
-        $this->assertCount(3, $button->getChildren());
+        $this->assertEqualsCanonicalizing([
+            'tasks.index',
+            'tasks.closed',
+            'tasks.projects.index',
+            'tasks.createFromPage',
+        ], $button->getChildren()->map->getName()->all());
         $this->assertCount(1, $menu->getButtonByName('settings')->getChildren());
     }
 }

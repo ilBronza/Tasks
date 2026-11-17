@@ -13,11 +13,16 @@
                 <p class="nt-intro">{{ __('tasks::tasks.' . ($showClosed ? 'closedIntro' : 'intro')) }}</p>
             </div>
         </div>
-        @if($canCreate)
-            <a class="nt-button nt-button-primary" href="{{ $createUrl }}">
-                <span data-icon="plus" aria-hidden="true"></span>{{ __('tasks::tasks.new') }}
-            </a>
-        @endif
+        <div class="nt-header-actions">
+            @if($isStaff)
+                <a class="nt-button" href="{{ route(config('tasks.routePrefix') . 'projects.index') }}">{{ __('tasks::tasks.projects') }}</a>
+            @endif
+            @if($canCreate)
+                <a class="nt-button nt-button-primary" href="{{ $createUrl }}">
+                    <span data-icon="plus" aria-hidden="true"></span>{{ __('tasks::tasks.new') }}
+                </a>
+            @endif
+        </div>
     </header>
 
     <nav class="nt-navigation" aria-label="{{ __('tasks::tasks.manage') }}">
@@ -43,6 +48,15 @@
             @endif
         </div>
         <div class="nt-search-controls">
+            <select data-project aria-label="{{ __('tasks::tasks.project') }}">
+                <option value="">{{ __('tasks::tasks.allProjects') }}</option>
+                @if($selectedProject && !array_key_exists($selectedProject, $projects))
+                    <option value="{{ $selectedProject }}" selected>{{ __('tasks::tasks.selectedProject') }}</option>
+                @endif
+                @foreach($projects as $id => $name)
+                    <option value="{{ $id }}" @selected($id === $selectedProject)>{{ $name }}</option>
+                @endforeach
+            </select>
             <label class="nt-search"><span data-icon="search" aria-hidden="true"></span><input type="search" data-search placeholder="{{ __('tasks::tasks.search') }}" aria-label="{{ __('tasks::tasks.search') }}" autocomplete="off"></label>
             <select data-assignee aria-label="{{ __('tasks::tasks.assignee') }}"><option value="all">{{ __('tasks::tasks.allAssignees') }}</option><option value="unassigned">{{ __('tasks::tasks.unassigned') }}</option></select>
         </div>

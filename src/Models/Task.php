@@ -12,7 +12,9 @@ use IlBronza\Notes\Traits\InteractsWithNotesTrait;
 use IlBronza\Notes\Contracts\AuthorizesNotes;
 use IlBronza\Notes\Models\Note;
 use IlBronza\Tasks\Models\Traits\TracksTaskAssignments;
+use IlBronza\Tasks\Sync\TaskSync;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\MediaLibrary\HasMedia;
 
 class Task extends BaseModel implements HasMedia, AuthorizesNotes
@@ -22,7 +24,9 @@ class Task extends BaseModel implements HasMedia, AuthorizesNotes
 	use InteractsWithMedia;
 	use CRUDUseUuidTrait;
 	use PackagedModelsTrait;
-	use TracksTaskAssignments;
+	use TracksTaskAssignments {
+		save as private saveWithAssignments;
+	}
 
 	static $packageConfigPrefix = 'tasks';
 	static $modelConfigPrefix = 'task';
@@ -30,6 +34,87 @@ class Task extends BaseModel implements HasMedia, AuthorizesNotes
 	public ?string $translationFolderPrefix = 'tasks';
 	protected $keyType = 'string';
 	static $deletingRelationships = ['media'];
+
+	protected $attributes = [
+		'project_id' => Project::DEFAULT_ID,
+	];
+
+	public function save(array $options = [])
+	{
+		$opening = TaskSync::client() && !$this->exists;
+		$publish = TaskSync::hub() && $this->sync_installation_id && (!$this->exists ||
+			$this->isDirty(['title', 'status', 'end_date', 'assignee_user_id', 'deleted_at']));
+		if (!$opening && !$publish)
+			return $this->saveWithAssignments($options);
+
+		return $this->getConnection()->transaction(function () use ($opening, $options) {
+			if ($opening) {
+				$this->sync_installation_id = TaskSync::installationId();
+				$this->sync_requester = auth()->user()?->name;
+				$this->status = 'open';
+				$this->end_date = null;
+				$this->assignee_user_id = null;
+			}
+			if (!$this->saveWithAssignments($options))
+				return false;
+			if ($opening)
+				TaskSync::enqueueOpening($this);
+			else
+				TaskSync::publishState($this->fresh(['assignee']));
+			return true;
+		});
+	}
+
+	public function delete()
+	{
+		if (!TaskSync::hub() || !$this->sync_installation_id)
+			return parent::delete();
+
+		return $this->getConnection()->transaction(function () {
+			$result = parent::delete();
+			if ($result) {
+				$this->deleted_at ??= now();
+				TaskSync::publishState($this);
+			}
+			return $result;
+		});
+	}
+
+	public static function userCanCreate(?User $user = null)
+	{
+		if (TaskSync::client())
+			return ($user ?? auth()->user())?->hasAnyRole(config('tasks.sync.reporter_roles')) ?? false;
+
+		return parent::userCanCreate($user);
+	}
+
+	public function workspaceAssignee(): ?string
+	{
+		return TaskSync::client() && $this->sync_installation_id ? $this->sync_assignee : $this->assignee?->name;
+	}
+
+	public function workspaceAssigneeId(): string
+	{
+		if (TaskSync::client() && $this->sync_installation_id)
+			return $this->sync_assignee_key === null ? '' : 'hub:' . $this->sync_assignee_key;
+
+		return (string) $this->assignee_user_id;
+	}
+
+	public function project(): BelongsTo
+	{
+		return $this->belongsTo(config('tasks.models.project.class'), 'project_id');
+	}
+
+	public function setProjectIdAttribute($value): void
+	{
+		$this->attributes['project_id'] = $value ?? Project::DEFAULT_ID;
+	}
+
+	public function getPossibleProjectsValuesArray(): array
+	{
+		return $this->project()->getRelated()->newQuery()->orderBy('name')->pluck('name', 'id')->all();
+	}
 
 	protected $casts = [
 		'start_date' => 'datetime',
@@ -97,6 +182,8 @@ class Task extends BaseModel implements HasMedia, AuthorizesNotes
 
 	public static function isTaskStaff($user = null) : bool
 	{
+		if (TaskSync::client())
+			return false;
 		$user = $user ?? auth()->user();
 		$roles = config('tasks.conversation.staffRoles', config('tasks.defaultRoles', []));
 
@@ -116,6 +203,8 @@ class Task extends BaseModel implements HasMedia, AuthorizesNotes
 		if (!$user)
 			return false;
 
+		if (TaskSync::client() && (string) $this->user_id === (string) $user->getKey())
+			return true;
 		if (static::isTaskStaff($user))
 			return parent::userCanSee($user);
 

@@ -1,6 +1,13 @@
 <?php
 
+$projects = config('tasks.routePrefix') . 'projects.';
+
 return [
+	$projects . 'index' => 'Progetti',
+	$projects . 'create' => 'Nuovo progetto',
+	$projects . 'store' => 'Salva progetto',
+	$projects . 'edit' => 'Modifica progetto',
+	$projects . 'update' => 'Aggiorna progetto',
 	'notesmanagernotes' => [
 		'archiveBulk' => 'Archivia in blocco',
 		'deleteMedia' => 'Cancella immagine',

@@ -5,6 +5,9 @@ namespace IlBronza\Tasks\Http\Controllers\Tasks;
 use IlBronza\Buttons\Button;
 use IlBronza\CRUD\Traits\CRUDIndexTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use IlBronza\Tasks\Sync\TaskSync;
+use IlBronza\Tasks\Helpers\TaskCreationHelper;
 
 class TaskIndexController extends TaskCRUD
 {
@@ -12,10 +15,18 @@ class TaskIndexController extends TaskCRUD
 
 	public $allowedMethods = ['index'];
 	protected bool $showClosed = false;
+	protected ?string $projectFilter = null;
 
 	public function index(Request $request)
 	{
 		$isStaff = $this->getModelClass()::isTaskStaff($request->user());
+		$projectId = $request->query('project_id');
+		abort_unless($projectId === null || Str::isUuid($projectId), 404);
+		// Participants' filter options come from the tasks they can see in this workspace.
+		$this->projectFilter = $isStaff ? $projectId : null;
+		$projectQuery = array_filter([
+			'project_id' => $projectId,
+		]);
 		$view = $request->query('view');
 		if ($request->ajax() || $view === 'table' || ($isStaff && !in_array($view, ['board', 'list'], true)))
 		{
@@ -28,6 +39,11 @@ class TaskIndexController extends TaskCRUD
 		$this->beforeIndex();
 
 		$tasks = $this->visibleTasks($request);
+		$projects = $isStaff
+			? (new ($this->getModelClass()))->getPossibleProjectsValuesArray()
+			: $tasks->pluck('project.name', 'project_id')->sort()->all();
+		if (!$isStaff && $projectId)
+			$tasks = $tasks->where('project_id', $projectId)->values();
 		$tasks->loadMissing('assignee');
 		$tasks->loadCount(['notes' => function ($query) use ($isStaff) {
 			if (!$isStaff)
@@ -38,17 +54,23 @@ class TaskIndexController extends TaskCRUD
 		$prefix = config('tasks.routePrefix');
 
 		return view('tasks::tasks.index', [
+			'projects' => $projects,
+			'selectedProject' => $projectId,
 			'assignees' => $isStaff ? (new ($this->getModelClass()))->getPossibleAssignees()
 				->map(fn ($user) => ['id' => (string) $user->getKey(), 'name' => $user->name])->values() : [],
 			'tasks' => $tasks->map(function ($task) use ($prefix, $request, $isStaff) {
 				return [
 					'id' => (string) $task->getKey(),
 					'title' => $task->title ?: __('tasks::tasks.untitled'),
-					'description' => $isStaff ? trim(strip_tags($task->description ?? '')) : '',
+					'project' => $task->project?->name,
+					'description' => $isStaff || (TaskSync::client() && $task->sync_installation_id)
+						? trim(strip_tags($task->description ?? '')) : '',
+					'synchronized' => (bool) $task->sync_installation_id,
+					'requester' => $isStaff ? $task->sync_requester : null,
 					'link' => $isStaff ? $task->link : null,
 					'status' => $task->status ?: 'open',
-					'assigneeId' => (string) ($task->assignee_user_id ?? ''),
-					'assignee' => $task->assignee?->name,
+					'assigneeId' => $task->workspaceAssigneeId(),
+					'assignee' => $task->workspaceAssignee(),
 					'startDate' => $task->start_date?->format('d/m/Y H:i'),
 					'dueDate' => $task->end_date?->format('Y-m-d'),
 					'dueLabel' => $task->end_date?->format('d/m/Y'),
@@ -69,11 +91,11 @@ class TaskIndexController extends TaskCRUD
 			'showClosed' => $this->showClosed,
 			'currentUserId' => (string) $request->user()->getAuthIdentifier(),
 			'today' => today()->format('Y-m-d'),
-			'canCreate' => $this->getModelClass()::userCanCreate($request->user()),
+			'canCreate' => TaskCreationHelper::canCreate(),
 			'isStaff' => $isStaff,
-			'indexUrl' => route($prefix . 'index'),
-			'closedUrl' => route($prefix . 'closed'),
-			'createUrl' => route($prefix . 'create'),
+			'indexUrl' => route($prefix . 'index', $projectQuery),
+			'closedUrl' => route($prefix . 'closed', $projectQuery),
+			'createUrl' => route($prefix . 'create', $projectQuery),
 			'tableUrl' => $request->fullUrlWithQuery(['view' => 'table']),
 		]);
 	}
@@ -91,15 +113,31 @@ class TaskIndexController extends TaskCRUD
 	public function addIndexButtons()
 	{
 		$prefix = config('tasks.routePrefix');
+		$projectQuery = array_filter([
+			'project_id' => $this->projectFilter,
+		]);
+		if ($this->projectFilter)
+			$this->getTable()->setUrl(route($prefix . ($this->showClosed ? 'closed' : 'index'), $projectQuery));
 		$this->getTable()->addButton(Button::create([
 			'text' => 'tasks::tasks.boardView', 'icon' => 'table-columns',
-			'href' => route($prefix . ($this->showClosed ? 'closed' : 'index'), ['view' => 'board']),
+			'href' => route($prefix . ($this->showClosed ? 'closed' : 'index'), ['view' => 'board'] + $projectQuery),
 		]));
 		$this->getTable()->addButton(Button::create([
 			'text' => $this->showClosed ? 'tasks::tasks.active' : 'tasks::tasks.closed',
 			'icon' => $this->showClosed ? 'list' : 'check',
-			'href' => route($prefix . ($this->showClosed ? 'index' : 'closed')),
+			'href' => route($prefix . ($this->showClosed ? 'index' : 'closed'), $projectQuery),
 		]));
+	}
+
+	public function getCreateNewModelButton(): Button
+	{
+		$button = parent::getCreateNewModelButton();
+		if ($this->projectFilter)
+			$button->setHref(route(config('tasks.routePrefix') . 'create', [
+				'project_id' => $this->projectFilter,
+			]));
+
+		return $button;
 	}
 
 	public function getIndexFieldsArray()
@@ -110,8 +148,14 @@ class TaskIndexController extends TaskCRUD
 
 	public function getIndexElements()
 	{
-		return $this->getModelClass()::notClosed()
+		return $this->taskQuery()->notClosed()
 			->orderByRaw('end_date IS NULL')->orderBy('end_date')->latest('created_at')->get();
+	}
+
+	protected function taskQuery()
+	{
+		return $this->getModelClass()::with('project')
+			->when($this->projectFilter, fn ($query, $id) => $query->where('project_id', $id));
 	}
 
 }
